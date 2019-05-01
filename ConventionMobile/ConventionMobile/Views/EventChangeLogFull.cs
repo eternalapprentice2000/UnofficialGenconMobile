@@ -55,7 +55,7 @@ namespace ConventionMobile.Views
                 {
                     await GlobalVars.db.DeleteAllEventChangeLogsAsync(eventChangeLogList);
                     await GlobalVars.db.SetGenEventUpdateNotificationAsReadAsync(eventItem);
-                    ((App)Application.Current).homePage.userListPage.IsUpdateRequested = true;
+                    ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = true;
                 });
             }
             base.OnDisappearing();

@@ -1,16 +1,8 @@
-﻿using ConventionMobile.Views;
-using ModernHttpClient;
-using Plugin.Share;
-//using Plugin.Toasts;
+﻿using Plugin.Share;
 using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
-using Xamarin.Forms.Xaml;
 
 namespace ConventionMobile.Views
 {
@@ -20,6 +12,7 @@ namespace ConventionMobile.Views
         GenSearchPage searchPage = null;
         public UserListPage userListPage;
         ListView navigationListView;
+        
         public bool overrideUpdateCheckEvents = false;
         public bool overrideUpdateCheckOptions = false;
 
@@ -35,14 +28,12 @@ namespace ConventionMobile.Views
             {
                 try
                 {
-                    if (userListPage.IsUpdateRequested || ((App)Application.Current).homePage.userListPage.IsUpdateRequested)
+                    if (userListPage.IsUpdateRequested || ((App)Application.Current).HomePage.userListPage.IsUpdateRequested)
                     {
                         userListPage.IsUpdateRequested = false;
-                        ((App)Application.Current).homePage.userListPage.IsUpdateRequested = false;
+                        ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = false;
                         userListPage.UpdateUserLists();
                     }
-                    //UserListPage updatePage = this.CurrentPage as UserListPage;
-                    //updatePage.UpdateUserLists();
                 }
                 catch (Exception)
                 {
@@ -50,27 +41,30 @@ namespace ConventionMobile.Views
                 }
             }
         }
-       
 
         public GenHomeTabPage()
         {
-
             navigationListView = new ListView
             {
                 ItemTemplate = new DataTemplate(typeof(NavigationCell)),
                 ItemsSource = GlobalVars.NavigationChoices
             };
 
+            navigationListView.ItemTapped += async (sender, args) =>
+            {
+                await Task.Run(() =>
+                {
+                    if (GlobalVars.EventLoadStatus != GlobalVars.EventLoadStatusEnum.NotRunning)
+                    {
+                        GlobalVars.DoToast("Selected map might be out of date", GlobalVars.ToastType.Red, 1000);
+                    }
+                    
+                });
+            };
+
             this.Title = GlobalVars.appTitle;
-
-            Command<Type> navigateCommand =
-               new Command<Type>(async (Type pageType) =>
-               {
-                   Page page = (Page)Activator.CreateInstance(pageType);
-                   await this.Navigation.PushAsync(page);
-               });
-
-            var MapPage = new ContentPage
+            
+            var mapPage = new ContentPage
             {
                 Title = GlobalVars.navigationTitle,
                 Content = new StackLayout
@@ -78,25 +72,22 @@ namespace ConventionMobile.Views
                     // Edit children here to add additional navigation options besides just maps.
                     Children =
                     {
-                        //headerLayout,
                         navigationListView
                     }
                 }
             };
 
             searchPage = new GenSearchPage();
-
             userListPage = new UserListPage();
-            
-            Children.Add(MapPage);
+           
+            Children.Add(mapPage);
             Children.Add(searchPage);
             Children.Add(userListPage);
 
             Xamarin.Forms.PlatformConfiguration.AndroidSpecific.TabbedPage.SetIsSwipePagingEnabled(this, true);
 
             // Define a selected handler for the ListView.
-            navigationListView.ItemSelected += (async (sender, args) => {
-
+            navigationListView.ItemSelected += async (sender, args) => {
                 if (args.SelectedItem != null)
                 {
                     DetailChoice selectedDetailChoice = (DetailChoice)args.SelectedItem;
@@ -113,23 +104,16 @@ namespace ConventionMobile.Views
                         await this.Navigation.PushAsync(page);
                     }
                 }
-            });
+            };
         }
-
 
         public async Task CheckForNewEventsAsync()
         {
+            GlobalVars.EventLoadStatus = GlobalVars.EventLoadStatusEnum.Checking;
             bool dontShowFurtherToasts = false;
             if (GlobalVars.isSyncNeeded || overrideUpdateCheckEvents)
             {
                 overrideUpdateCheckEvents = false;
-                //bool tapped = await GlobalVars.notifier.Notify(ToastNotificationType.Info,
-                //"Updating", "Now checking for updated events...", TimeSpan.FromSeconds(2));
-                //var tapped = await GlobalVars.notifier.Notify(new NotificationOptions()
-                //{
-                //    Title = "Updating",
-                //    Description = "Now checking for updated events...",
-                //});
                 GlobalVars.DoToast("Now checking for updated events...", GlobalVars.ToastType.Yellow);
                 var events = await App.GenEventManager.GetEventsAsync(await GlobalVars.serverLastSyncTime());
 
@@ -142,14 +126,6 @@ namespace ConventionMobile.Views
 
                 GlobalVars.lastSyncTime = DateTime.Now;
 
-                //bool tapped2 = await GlobalVars.notifier.Notify(ToastNotificationType.Success,
-                //"Events Updated", "All events are now up-to-date.", TimeSpan.FromSeconds(2));
-                //var tapped2 = await GlobalVars.notifier.Notify(new NotificationOptions()
-                //{
-                //    Title = "Events Updated.",
-                //    Description = "All events are now up-to-date."
-                //});
-
                 if (!string.IsNullOrEmpty(toastText))
                 {
                     GlobalVars.DoToast(toastText, GlobalVars.ToastType.Yellow, 10000);
@@ -161,8 +137,10 @@ namespace ConventionMobile.Views
                 }
                 searchPage?.UpdateEventInfo();
             }
-
+            
             await CheckForNewGlobalVarsAsync(dontShowFurtherToasts);
+
+            GlobalVars.EventLoadStatus = GlobalVars.EventLoadStatusEnum.NotRunning;
         }
 
         private async Task CheckForNewGlobalVarsAsync(bool dontShowFurtherToasts)
@@ -172,27 +150,15 @@ namespace ConventionMobile.Views
             if (GlobalVars.isGlobalVarSyncNeeded || overrideUpdateCheckOptions)
             {
                 overrideUpdateCheckOptions = false;
-                //bool tapped = await GlobalVars.notifier.Notify(ToastNotificationType.Info,
-                //"Updating Maps and other info", "Now checking for updated information...", TimeSpan.FromSeconds(2));
-                //var returned = await GlobalVars.notifier.Notify(new NotificationOptions()
-                //{
-                //    Title = "Updating Maps and other info",
-                //    Description = "Now checking for updated information..."
-                //});
+
                 if (!dontShowFurtherToasts)
                 {
                     GlobalVars.DoToast("Now checking for updated maps or other info...", GlobalVars.ToastType.Yellow);
                 }
 
-                //using (var client = new HttpClient(new NativeMessageHandler()
-                //{
-                //    Timeout = new TimeSpan(0, 0, 9),
-                //    EnableUntrustedCertificates = true,
-                //    DisableCaching = true
-                //}))
                 using (var client = new HttpClient())
                 {
-                    client.MaxResponseContentBufferSize = 25600000;
+                    client.MaxResponseContentBufferSize = 25600000; // why not int.MaxValue?
                     DateTime indyTime = DependencyService.Get<ICalendar>().ConvertToIndy(GlobalVars.lastGlobalVarUpdateTime);
                     string newURL = String.Format(GlobalVars.GlobalOptionsURLCustomizableURL, indyTime.ToString("yyyy-MM-dd't'HH:mm:ss"));
 
@@ -208,21 +174,10 @@ namespace ConventionMobile.Views
                             {
                                 GlobalVars.FileDownloadProgressUpdated += GlobalVars_FileDownloadProgressUpdated;
 
-                                bool totalSuccess = await GlobalVars.OverwriteOptions(content);
+                                var totalSuccess = await GlobalVars.OverwriteOptions(content);
 
                                 GlobalVars.FileDownloadProgressUpdated -= GlobalVars_FileDownloadProgressUpdated;
 
-                                //START HERE DUMMY
-                                // PICK UP CODING HERE STUPID
-
-
-                                //bool tapped2 = await GlobalVars.notifier.Notify(ToastNotificationType.Success,
-                                //"Maps and info have been updated.", "**REFRESHING SCREEN**", TimeSpan.FromSeconds(2));
-                                //var tapped2 = await GlobalVars.notifier.Notify(new NotificationOptions()
-                                //{
-                                //    Title = "Maps and info have been updated.",
-                                //    Description = "**REFRESHING SCREEN**",
-                                //});
                                 GlobalVars.DoToast("Update success - **REFRESHING SCREEN**", GlobalVars.ToastType.Green);
                                 searchPage?.UpdateEventInfo();
 
@@ -243,13 +198,6 @@ namespace ConventionMobile.Views
                             }
                             else
                             {
-                                //bool tapped2 = await GlobalVars.notifier.Notify(ToastNotificationType.Success,
-                                //"Check complete.", "You already have the most recent info.", TimeSpan.FromSeconds(2));
-                                //var tapped2 = await GlobalVars.notifier.Notify(new NotificationOptions()
-                                //{
-                                //    Title = "Check complete.",
-                                //    Description = "You already have the most recent info."
-                                //});
                                 if (!dontShowFurtherToasts)
                                 {
                                     GlobalVars.DoToast("You are up to date.", GlobalVars.ToastType.Green);
@@ -272,20 +220,12 @@ namespace ConventionMobile.Views
                     }
                     catch (Exception)
                     {
-                        //bool tapped2 = await GlobalVars.notifier.Notify(ToastNotificationType.Success,
-                        //        "Check complete.", "Couldn't update now, but we'll try again later.", TimeSpan.FromSeconds(2));
-                        //var tapped2 = await GlobalVars.notifier.Notify(new NotificationOptions()
-                        //{
-                        //    Title = "Check complete.",
-                        //    Description = "Couldn't update now, but we'll try again later."
-                        //});
                         if (!dontShowFurtherToasts)
                         {
                             GlobalVars.DoToast("Couldn't update now, but we'll try again later.", GlobalVars.ToastType.Yellow);
                         }
                     }
                 }
-
             }
         }
 
@@ -298,14 +238,12 @@ namespace ConventionMobile.Views
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            Task.Factory.StartNew(CheckForNewEventsAsync);
-            if (navigationListView != null)
+            if (GlobalVars.EventLoadStatus == GlobalVars.EventLoadStatusEnum.NotRunning)
             {
-                navigationListView.ClearValue(ListView.SelectedItemProperty);
+                Task.Factory.StartNew(CheckForNewEventsAsync);
             }
+            navigationListView?.ClearValue(ListView.SelectedItemProperty);
             CheckForUserListPageListRefresh();
         }
-
-
     }
 }

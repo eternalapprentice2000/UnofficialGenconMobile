@@ -563,7 +563,7 @@ namespace ConventionMobile.Views
                                 newList.Events.Add(currentEvent);
                                 newList.HasEventListChangedSinceSync = true;
                                 await GlobalVars.db.UpdateUserEventListWithChildrenAsync(newList);
-                                ((App)Application.Current).homePage.userListPage.IsUpdateRequested = true;
+                                ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = true;
                                 //selectedList = newList.Title;
                             }
                             else
@@ -575,7 +575,7 @@ namespace ConventionMobile.Views
                                     currentList.Events = currentList.Events.Distinct().OrderBy(d => d.StartDateTime).ToList();
                                     currentList.HasEventListChangedSinceSync = true;
                                     await GlobalVars.db.UpdateUserEventListWithChildrenAsync(currentList);
-                                    ((App)Application.Current).homePage.userListPage.IsUpdateRequested = true;
+                                    ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = true;
                                 }
                             }
 

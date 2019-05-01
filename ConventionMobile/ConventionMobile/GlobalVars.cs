@@ -20,6 +20,36 @@ namespace ConventionMobile
 {
     public class GlobalVars
     {
+        public static object LockObject = new object();
+
+        public enum EventLoadStatusEnum
+        {
+            NotRunning,
+            Checking,
+            Loading,
+            Aggregating
+        }
+        
+        private static EventLoadStatusEnum _eventLoadStatusEnum { get; set; }
+        public static EventLoadStatusEnum EventLoadStatus
+        {
+            get
+            {
+                lock (LockObject)
+                {
+                    return _eventLoadStatusEnum;
+                }
+            }
+            set
+            {
+                lock (LockObject)
+                {
+                    _eventLoadStatusEnum = value;
+                }
+            }
+        }
+        
+
         public static GenconMobileDatabase db
         {
             get
@@ -58,10 +88,6 @@ namespace ConventionMobile
                     new GlobalOption("minSyncTimeSpanMinutes", minSyncTimeSpanMinutes),
                     new GlobalOption("lastSyncTime", lastSyncTime),
                     new GlobalOption("NavigationChoices", NavigationChoices),
-                    //new GlobalOption("GlobalOptionsURL", GlobalOptionsURL),
-                    //new GlobalOption("GlobalOptionsURLCustomizableURL", GlobalOptionsURLCustomizableURL),
-                    //new GlobalOption("GenEventAllEventsCustomizableURL", GenEventAllEventsCustomizableURL),
-                    //new GlobalOption("GenEventAllEventsCountURL", GenEventAllEventsCountURL),
                     new GlobalOption("dbVersion", dbVersion),
                     new GlobalOption("lastGlobalVarUpdateTime", lastGlobalVarUpdateTime)
                 };
@@ -101,19 +127,6 @@ namespace ConventionMobile
                 UserDialogs.Instance.Toast(toastConfig);
             });
         }
-
-        //public static IToastNotificator notifier
-        //{
-        //    get
-        //    {
-        //        if (_notifier == null)
-        //        {
-        //            _notifier = DependencyService.Get<IToastNotificator>();
-        //        }
-        //        return _notifier;
-        //    }
-        //}
-        //private static IToastNotificator _notifier = null;
 
         /// <summary>
         /// Returns the last sync time as specified by the server. Since this is UTC, does NOT relate to local last time the user synchronized.
@@ -835,7 +848,7 @@ namespace ConventionMobile
             {
                 if (_navigationChoicesDefault == null)
                 {
-                    _navigationChoicesDefault = JsonConvert.SerializeObject(new List<DetailChoice>
+                    _navigationChoicesDefault = new List<DetailChoice>
                         {
                             new DetailChoice ("Convention Floor 1", "convention-1.jpg", typeof(MapViewPage), true, "ic_map_black_24dp.png"),
                             new DetailChoice ("Convention Floor 2", "convention-2.jpg", typeof(MapViewPage), true, "ic_map_black_24dp.png"),
@@ -855,20 +868,17 @@ namespace ConventionMobile
                             new DetailChoice ("Food Trucks", "foodtrucks.html", typeof(MapViewPage), true, "ic_directions_black_24dp.png"),
                             new DetailChoice ("Driving Directions", "DrivingDirections.html", typeof(MapViewPage), true, "ic_directions_black_24dp.png"),
                             new DetailChoice ("Interactive Online Map", "https://www.gencon.com/map?lt=13.81674404684894&lg=37.705078125&f=1&z=5", typeof(MapViewPage), true, "ic_public_black_24dp.png")
-                        });
+                        };
                 }
 
-                string dbItem = getOption<string>("NavigationChoices", _navigationChoicesDefault);
+                var dbItem = getOption<List<DetailChoice>>("NavigationChoices", _navigationChoicesDefault);
+                return dbItem;
 
-                return JsonConvert.DeserializeObject<List<DetailChoice>>(dbItem);
             }
-            set
-            {
-                setOption("NavigationChoices", JsonConvert.SerializeObject(value));
-            }
+            set => setOption("NavigationChoices", value);
         }
 
-        private static string _navigationChoicesDefault = null;
+        private static List<DetailChoice> _navigationChoicesDefault = null;
 
         public static async Task ImportUserEventList(string data, string name)
         {
@@ -895,7 +905,7 @@ namespace ConventionMobile
                     DoToast("Successfully imported list " + name.ToString() + "!", ToastType.Green, 5000);
                     try
                     {
-                        ((App)Application.Current).homePage.userListPage.IsUpdateRequested = true;
+                        ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = true;
                     }
                     catch (Exception) { }
                 }

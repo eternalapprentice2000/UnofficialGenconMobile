@@ -530,10 +530,10 @@ namespace ConventionMobile.Views
             base.OnAppearing();
             try
             {
-                if (IsUpdateRequested || ((App)Application.Current).homePage.userListPage.IsUpdateRequested)
+                if (IsUpdateRequested || ((App)Application.Current).HomePage.userListPage.IsUpdateRequested)
                 {
                     IsUpdateRequested = false;
-                    ((App)Application.Current).homePage.userListPage.IsUpdateRequested = false;
+                    ((App)Application.Current).HomePage.userListPage.IsUpdateRequested = false;
                     UpdateUserLists();
                 }
                 //UserListPage updatePage = this.CurrentPage as UserListPage;

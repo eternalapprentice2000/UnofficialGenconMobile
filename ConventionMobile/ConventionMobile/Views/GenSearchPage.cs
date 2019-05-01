@@ -528,7 +528,7 @@ namespace ConventionMobile.Views
 
             ToolbarItems.Add(new ToolbarItem("Refresh", "ic_refresh_black_24dp.png", () =>
             {
-                var homePage = ((App)Application.Current).homePage;
+                var homePage = ((App)Application.Current).HomePage;
 
                 homePage.overrideUpdateCheckEvents = true;
                 homePage.overrideUpdateCheckOptions = true;
@@ -1115,13 +1115,12 @@ namespace ConventionMobile.Views
         {
             base.OnAppearing();
 
-            if (genEventListView != null)
+            if (GlobalVars.EventLoadStatus != GlobalVars.EventLoadStatusEnum.NotRunning)
             {
-                genEventListView.ClearValue(ListView.SelectedItemProperty);
+                GlobalVars.DoToast("The Events are Still Loading.", GlobalVars.ToastType.Red, 10000);
             }
 
-
-            //checkForNewEvents();
+            genEventListView?.ClearValue(ListView.SelectedItemProperty);
         }
 
         public void UpdateEventInfo()
