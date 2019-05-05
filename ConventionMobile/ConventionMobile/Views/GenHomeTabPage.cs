@@ -2,6 +2,7 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using ConventionMobile.Helpers;
 using Xamarin.Forms;
 
 namespace ConventionMobile.Views
@@ -54,11 +55,10 @@ namespace ConventionMobile.Views
             {
                 await Task.Run(() =>
                 {
-                    if (GlobalVars.EventLoadStatus != GlobalVars.EventLoadStatusEnum.NotRunning)
+                    if (GlobalVars.EventLoadStatus != Enums.EventLoadStatus.NotRunning)
                     {
-                        GlobalVars.DoToast("Selected map might be out of date", GlobalVars.ToastType.Red, 1000);
+                        NotificationBox.AddNotificationAsync("Selected map might be out of date", NotificationLevel.Medium).GetAwaiter().GetResult();
                     }
-                    
                 });
             };
 
@@ -76,7 +76,7 @@ namespace ConventionMobile.Views
                     }
                 }
             };
-
+            
             searchPage = new GenSearchPage();
             userListPage = new UserListPage();
            
@@ -100,7 +100,6 @@ namespace ConventionMobile.Views
                     {
                         Page page = (Page)Activator.CreateInstance(selectedDetailChoice.pageType);
                         page.BindingContext = selectedDetailChoice;
-                        //this.IsPresented = false;
                         await this.Navigation.PushAsync(page);
                     }
                 }
@@ -109,53 +108,40 @@ namespace ConventionMobile.Views
 
         public async Task CheckForNewEventsAsync()
         {
-            GlobalVars.EventLoadStatus = GlobalVars.EventLoadStatusEnum.Checking;
-            bool dontShowFurtherToasts = false;
+            GlobalVars.EventLoadStatus = Enums.EventLoadStatus.LoadingEvents;
             if (GlobalVars.isSyncNeeded || overrideUpdateCheckEvents)
             {
                 overrideUpdateCheckEvents = false;
-                GlobalVars.DoToast("Now checking for updated events...", GlobalVars.ToastType.Yellow);
+                await NotificationBox.AddNotificationAsync("Now checking for updated events...", NotificationLevel.Medium);
                 var events = await App.GenEventManager.GetEventsAsync(await GlobalVars.serverLastSyncTime());
-
-                string toastText = "";
-
                 if (events.Count > 0)
                 {
-                    toastText = await GlobalVars.db.SaveItemsAsync(events);
-                }
-
-                GlobalVars.lastSyncTime = DateTime.Now;
-
-                if (!string.IsNullOrEmpty(toastText))
-                {
-                    GlobalVars.DoToast(toastText, GlobalVars.ToastType.Yellow, 10000);
-                    dontShowFurtherToasts = true;
+                    await NotificationBox.AddNotificationAsync(await GlobalVars.db.SaveItemsAsync(events), NotificationLevel.Medium, 10000);
                 }
                 else
                 {
-                    GlobalVars.DoToast("All events are now up-to-date.", GlobalVars.ToastType.Green);
+                    await NotificationBox.AddNotificationAsync("All events are now up-to-date.");
                 }
+
+                GlobalVars.lastSyncTime = DateTime.Now;
                 searchPage?.UpdateEventInfo();
             }
             
-            await CheckForNewGlobalVarsAsync(dontShowFurtherToasts);
+            await CheckForNewGlobalVarsAsync();
 
-            GlobalVars.EventLoadStatus = GlobalVars.EventLoadStatusEnum.NotRunning;
+            GlobalVars.EventLoadStatus = Enums.EventLoadStatus.NotRunning;
         }
 
-        private async Task CheckForNewGlobalVarsAsync(bool dontShowFurtherToasts)
+        private async Task CheckForNewGlobalVarsAsync()
         {
             //string newURL = String.Format(GlobalVars.GlobalOptionsURLCustomizableURL, TimeZoneInfo.ConvertTime(GlobalVars.lastGlobalVarUpdateTime, TimeZoneInfo.Utc).ToString("yyyy-MM-dd't'HH:mm:ss"));
-
+            GlobalVars.EventLoadStatus = Enums.EventLoadStatus.LoadingMaps;
             if (GlobalVars.isGlobalVarSyncNeeded || overrideUpdateCheckOptions)
             {
                 overrideUpdateCheckOptions = false;
+                await NotificationBox.AddNotificationAsync("Now checking for updated maps or other info...", NotificationLevel.Medium);
 
-                if (!dontShowFurtherToasts)
-                {
-                    GlobalVars.DoToast("Now checking for updated maps or other info...", GlobalVars.ToastType.Yellow);
-                }
-
+                // todo, should move this to an abstract layer
                 using (var client = new HttpClient())
                 {
                     client.MaxResponseContentBufferSize = 25600000; // why not int.MaxValue?
@@ -178,11 +164,12 @@ namespace ConventionMobile.Views
 
                                 GlobalVars.FileDownloadProgressUpdated -= GlobalVars_FileDownloadProgressUpdated;
 
-                                GlobalVars.DoToast("Update success - **REFRESHING SCREEN**", GlobalVars.ToastType.Green);
+                                //GlobalVars.DoToast("Update success - **REFRESHING SCREEN**", GlobalVars.ToastType.Green);
+                                await NotificationBox.AddNotificationAsync("Update success - **REFRESHING SCREEN**");
                                 searchPage?.UpdateEventInfo();
 
-                                await searchPage?.CloseAllPickers();
-                                Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+                                if (searchPage != null) await searchPage?.CloseAllPickers();
+                                Device.BeginInvokeOnMainThread(() =>
                                 {
                                     try
                                     {
@@ -190,7 +177,7 @@ namespace ConventionMobile.Views
                                     }
                                     catch (Exception)
                                     {
-
+                                        // should at least log something here
                                     }
                                 });
 
@@ -198,14 +185,11 @@ namespace ConventionMobile.Views
                             }
                             else
                             {
-                                if (!dontShowFurtherToasts)
-                                {
-                                    GlobalVars.DoToast("You are up to date.", GlobalVars.ToastType.Green);
-                                }
-                                
+                                await NotificationBox.AddNotificationAsync("You are up to date.");
+
                                 try
                                 {
-                                    Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+                                    Device.BeginInvokeOnMainThread(() =>
                                     {
                                         searchPage?.UpdateEventInfo();
                                     });
@@ -220,10 +204,7 @@ namespace ConventionMobile.Views
                     }
                     catch (Exception)
                     {
-                        if (!dontShowFurtherToasts)
-                        {
-                            GlobalVars.DoToast("Couldn't update now, but we'll try again later.", GlobalVars.ToastType.Yellow);
-                        }
+                        await NotificationBox.AddNotificationAsync("Couldn't update now, but we'll try again later.", NotificationLevel.Critical);
                     }
                 }
             }
@@ -238,7 +219,7 @@ namespace ConventionMobile.Views
         protected override void OnAppearing()
         {
             base.OnAppearing();
-            if (GlobalVars.EventLoadStatus == GlobalVars.EventLoadStatusEnum.NotRunning)
+            if (GlobalVars.EventLoadStatus == Enums.EventLoadStatus.NotRunning)
             {
                 Task.Factory.StartNew(CheckForNewEventsAsync);
             }

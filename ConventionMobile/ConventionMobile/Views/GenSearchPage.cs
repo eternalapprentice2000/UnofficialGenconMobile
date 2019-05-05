@@ -13,6 +13,7 @@ using System.Linq.Expressions;
 using System.Linq;
 using MoreLinq;
 using System.Collections.ObjectModel;
+using ConventionMobile.Helpers;
 
 namespace ConventionMobile.Views
 {
@@ -638,15 +639,6 @@ namespace ConventionMobile.Views
 
         private async void GenEventListView_ItemSelected(object sender, SelectedItemChangedEventArgs e)
         {
-            //// Deselect previous
-            //if (selectedGenEvent != null)
-            //{
-            //    selectedGenEvent.SetColors(false);
-            //}
-
-            //// Select new
-            //selectedGenEvent = (genEventListView.SelectedItem as GenEvent);
-            //selectedGenEvent.SetColors(true);
             if (e.SelectedItem != null)
             {
                 GenEvent selectedEvent = (GenEvent)e.SelectedItem;
@@ -656,16 +648,6 @@ namespace ConventionMobile.Views
                 await this.Navigation.PushAsync(page);
             }
         }
-
-        //private async Task GenEventListView_ItemTapped(object sender, ItemTappedEventArgs e)
-        //{
-        //    GenEvent selectedEvent = (GenEvent)e.Item;
-
-        //    Page page = (Page)Activator.CreateInstance(typeof(GenEventFull));
-        //    page.BindingContext = selectedEvent;
-        //    await this.Navigation.PushAsync(page);
-        //}
-
 
         private void ClearSearchTap_Tapped(object sender, EventArgs e)
         {
@@ -758,10 +740,7 @@ namespace ConventionMobile.Views
         {
             loadingIndicator.IsVisible = false;
             RemoveAutoCompleteView();
-            if (this.searchCTS != null)
-            {
-                this.searchCTS.Cancel();
-            }
+            searchCTS?.Cancel();
 
             this.searchCTS = new CancellationTokenSource();
             Task.Factory.StartNew(() => {
@@ -785,21 +764,6 @@ namespace ConventionMobile.Views
                         eventDisplayWrapper.Children.Add(genEventList);
                     }
                     loadingIndicator.IsVisible = true;
-                    //var tempItemTemplate = new DataTemplate(typeof(TextCell));
-                    //tempItemTemplate.CreateContent();
-
-                    //loadingListView.ItemTemplate = tempItemTemplate;
-
-                    //loadingListView.ItemsSource = new List<TextCell>()
-                    //{
-                    //    new TextCell()
-                    //    {
-                    //        Text =  "Loading..."
-                    //    }
-                    //};
-
-                    //genEventList.Content = loadingListView;
-
 
                     var itemTemplate = new DataTemplate(typeof(GenEventCell));
                     itemTemplate.CreateContent();
@@ -818,33 +782,21 @@ namespace ConventionMobile.Views
                         {
                             var newItemsSource = await GlobalVars.db.GetItemsFTS4(searchEntry.Text, GetDBOptions());
 
-                            Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+                            Device.BeginInvokeOnMainThread(() =>
                             {
-                            //var tempItemTemplate = new DataTemplate(typeof(TextCell));
-                            //tempItemTemplate.CreateContent();
 
-                            //loadingListView.ItemTemplate = tempItemTemplate;
-
-                            //loadingListView.ItemsSource = new List<TextCell>()
-                            //{
-                            //    new TextCell()
-                            //    {
-                            //        Text =  "Loading..."
-                            //    }
-                            //};
-
-                            //genEventList.Content = loadingListView;
-                            genEventListView.ItemsSource = newItemsSource;
-                                genEventList.Content = genEventListView;
-                                loadingIndicator.IsVisible = false;
-                                //dontCloseAutoComplete = true;
+                                //genEventList.Content = loadingListView;
+                                genEventListView.ItemsSource = newItemsSource;
+                                    genEventList.Content = genEventListView;
+                                    loadingIndicator.IsVisible = false;
+                                    //dontCloseAutoComplete = true;
                             });
                         }
                         catch (Exception ex)
                         {
                             string error = ex.Message;
                         }
-                    });
+                    }, ct);
                 });
 
                 
@@ -1115,9 +1067,11 @@ namespace ConventionMobile.Views
         {
             base.OnAppearing();
 
-            if (GlobalVars.EventLoadStatus != GlobalVars.EventLoadStatusEnum.NotRunning)
+
+
+            if (GlobalVars.EventLoadStatus != Enums.EventLoadStatus.NotRunning)
             {
-                GlobalVars.DoToast("The Events are Still Loading.", GlobalVars.ToastType.Red, 10000);
+                NotificationBox.AddNotificationAsync("The Events are Still Loading", NotificationLevel.Medium).GetAwaiter().GetResult();
             }
 
             genEventListView?.ClearValue(ListView.SelectedItemProperty);

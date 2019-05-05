@@ -7,9 +7,7 @@ using Newtonsoft.Json.Linq;
 //using Plugin.Toasts;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -22,16 +20,8 @@ namespace ConventionMobile
     {
         public static object LockObject = new object();
 
-        public enum EventLoadStatusEnum
-        {
-            NotRunning,
-            Checking,
-            Loading,
-            Aggregating
-        }
-        
-        private static EventLoadStatusEnum _eventLoadStatusEnum { get; set; }
-        public static EventLoadStatusEnum EventLoadStatus
+        private static Enums.EventLoadStatus _eventLoadStatusEnum { get; set; }
+        public static Enums.EventLoadStatus EventLoadStatus
         {
             get
             {
@@ -48,7 +38,6 @@ namespace ConventionMobile
                 }
             }
         }
-        
 
         public static GenconMobileDatabase db
         {
@@ -848,7 +837,7 @@ namespace ConventionMobile
             {
                 if (_navigationChoicesDefault == null)
                 {
-                    _navigationChoicesDefault = new List<DetailChoice>
+                    _navigationChoicesDefault = JsonConvert.SerializeObject(new List<DetailChoice>
                         {
                             new DetailChoice ("Convention Floor 1", "convention-1.jpg", typeof(MapViewPage), true, "ic_map_black_24dp.png"),
                             new DetailChoice ("Convention Floor 2", "convention-2.jpg", typeof(MapViewPage), true, "ic_map_black_24dp.png"),
@@ -868,17 +857,17 @@ namespace ConventionMobile
                             new DetailChoice ("Food Trucks", "foodtrucks.html", typeof(MapViewPage), true, "ic_directions_black_24dp.png"),
                             new DetailChoice ("Driving Directions", "DrivingDirections.html", typeof(MapViewPage), true, "ic_directions_black_24dp.png"),
                             new DetailChoice ("Interactive Online Map", "https://www.gencon.com/map?lt=13.81674404684894&lg=37.705078125&f=1&z=5", typeof(MapViewPage), true, "ic_public_black_24dp.png")
-                        };
+                        });
                 }
 
-                var dbItem = getOption<List<DetailChoice>>("NavigationChoices", _navigationChoicesDefault);
-                return dbItem;
+                var dbItem = getOption<string>("NavigationChoices", _navigationChoicesDefault);
+                return JsonConvert.DeserializeObject<List<DetailChoice>>(dbItem);
 
             }
             set => setOption("NavigationChoices", value);
         }
 
-        private static List<DetailChoice> _navigationChoicesDefault = null;
+        private static string _navigationChoicesDefault = null;
 
         public static async Task ImportUserEventList(string data, string name)
         {
