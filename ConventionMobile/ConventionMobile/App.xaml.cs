@@ -1,4 +1,5 @@
 using ConventionMobile.Data;
+using ConventionMobile.Pages;
 using ConventionMobile.Views;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
@@ -11,7 +12,8 @@ namespace ConventionMobile
         public static GenEventManager GenEventManager { get; private set; }
 
         public GenHomeTabPage HomePage;
-        
+	    public GenMainPage HomePage2;
+
         public App ()
 		{
 			InitializeComponent();
@@ -29,8 +31,9 @@ namespace ConventionMobile
         {
             Device.BeginInvokeOnMainThread(() =>
             {
+                HomePage2 = new GenMainPage();
                 HomePage = new GenHomeTabPage();
-                MainPage = new NavigationPage(HomePage);
+                MainPage = new NavigationPage(HomePage2);
             });
         }
 
