@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Net.Mime;
 using ConventionMobile.Pages;
 using Plugin.Share;
+using Rg.Plugins.Popup.Pages;
+using Rg.Plugins.Popup.Services;
 using Xamarin.Forms;
 
 namespace ConventionMobile.Views
@@ -35,19 +38,22 @@ namespace ConventionMobile.Views
 
                     if (selectedDetailChoice.data.ToLower().StartsWith("http:") || selectedDetailChoice.data.ToLower().StartsWith("https:"))
                     {
+                        //todo put this in a popup container as well???
                         await CrossShare.Current.OpenBrowser(selectedDetailChoice.data, null);
                     }
                     else
                     {
-                        //TODO: this is no bueno, the page will navigate away from the main layout
-                        //need to find a way to make this just an overlay or layer
-
-                        var page = (Page)Activator.CreateInstance(selectedDetailChoice.pageType);
+                        var page = (PopupPage)Activator.CreateInstance(selectedDetailChoice.pageType);
                         page.BindingContext = selectedDetailChoice;
-                        await this.Navigation.PushAsync(page);
+                        await PopupNavigation.Instance.PushAsync(page);
                     }
                 }
             });
+
+            this.OnAppearedHandler += (sender, args) =>
+            {
+                ClearNavOption(ListView.SelectedItemProperty);
+            };
 
             var content = new StackLayout
             {

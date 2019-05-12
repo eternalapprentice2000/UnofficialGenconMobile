@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using ConventionMobile.Pages;
 using Xam.Plugin.TabView;
 using Xamarin.Forms;
@@ -31,7 +31,18 @@ namespace ConventionMobile.Views
             this.HorizontalOptions = LayoutOptions.FillAndExpand;
 
             tabViewControl.PositionChanged += TabView_PositionChanged;
+            tabViewControl.PositionChanging += TabView_PositionChanging;
+        }
 
+        private void TabView_PositionChanging(object sender, PositionChangingEventArgs e)
+        {
+            // trigger views OnAppearing Event
+            var newTabbedPage = _tabList[e.NewPosition];
+            newTabbedPage.OnAppearing(this, e);
+
+            // triggers views OnLeaving Event
+            var oldTabbedpage = _tabList[e.OldPosition];
+            oldTabbedpage.OnLeaving(this, e);
         }
 
         private void TabView_PositionChanged(object sender, PositionChangedEventArgs e)
@@ -42,7 +53,15 @@ namespace ConventionMobile.Views
                 _parentPage.ToolbarItems.Clear();
             }
 
-            _tabList[e.NewPosition].ToolbarItems.ForEach(toolbarItem => _parentPage.ToolbarItems.Add(toolbarItem));
+            var newTabbedPage = _tabList[e.NewPosition];
+            newTabbedPage.ToolbarItems.ForEach(toolbarItem => _parentPage.ToolbarItems.Add(toolbarItem));
+
+            // trigger views OnAppeared Event
+            newTabbedPage.OnAppeared(this, e);
+
+            // triggers views OnLeft Event
+            var oldTabbedPage = _tabList[e.OldPosition];
+            oldTabbedPage.OnLeft(this, e);
         }
     }
 }

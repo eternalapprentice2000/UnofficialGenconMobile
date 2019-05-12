@@ -1262,59 +1262,6 @@ namespace ConventionMobile
         /// </summary>
         public string data { get; set; }
 
-        //[JsonIgnore]
-        //public ImageSource dataImage
-        //{
-        //    get
-        //    {
-        //        return ImageSource.FromResource("ConventionMobile.Resources." + data);
-        //    }
-        //}
-
-        //[JsonIgnore]
-        //public string formattedHTMLEmbeddedImageData
-        //{
-        //    get
-        //    {
-        //        var extension = Path.GetExtension(data).ToLower().Replace(".", "");
-        //        if (extension == "jpg")
-        //        {
-        //            extension = "jpeg";
-        //        }
-
-        //        var assembly = typeof(GlobalVars).GetTypeInfo().Assembly;
-        //        Stream stream = assembly.GetManifestResourceStream("ConventionMobile.Resources." + data);
-
-        //        if (extension == "html" || extension == "htm" )
-        //        {
-        //            string text = "";
-        //            using (var reader = new StreamReader(stream))
-        //            {
-        //                text = reader.ReadToEnd();
-        //            }
-
-        //            return text;
-        //        }
-        //        else
-        //        {
-        //            byte[] byteData = getByteData(stream);
-        //            String encodedImageData = Convert.ToBase64String(byteData);
-
-        //            return String.Format("<html><head></head><body><img src=\"data:image/{0};base64,{1}\" /></body></html>", extension, encodedImageData);
-        //        }
-        //    }
-        //}
-
-
-        //private byte[] getByteData(Stream sourceStream)
-        //{
-        //    using (var memoryStream = new MemoryStream())
-        //    {
-        //        sourceStream.CopyTo(memoryStream);
-        //        return memoryStream.ToArray();
-        //    }
-        //}
-
         [JsonIgnore]
         /// <summary>
         /// The type of page we want to pass the data choice to

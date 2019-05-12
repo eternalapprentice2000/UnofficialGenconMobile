@@ -60,7 +60,7 @@ namespace ConventionMobile.Business
             }
         }
 
-        private async Task CheckForNewGlobalVarsAsync(bool dontShowFurtherToasts)
+        public async Task CheckForNewGlobalVarsAsync(bool dontShowFurtherToasts)
         {
             var searchPage = (Application.Current as App)?.HomePage.GenSearchPage;
             _loadingState = LoadingState.LoadingMaps;

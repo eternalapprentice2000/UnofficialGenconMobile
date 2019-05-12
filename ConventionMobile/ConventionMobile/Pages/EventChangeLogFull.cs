@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms;
 
-namespace ConventionMobile.Views
+namespace ConventionMobile.Pages
 {
     public class EventChangeLogFull : ContentPage
     {
